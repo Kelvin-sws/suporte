@@ -70,8 +70,22 @@ do {
     switch ($Opcao) {
         "1" {
             Write-Host "Limpando arquivos temporarios..." -ForegroundColor Green
-            Remove-Item -Path "C:\Windows\Temp\*" -Recurse -Force -ErrorAction SilentlyContinue
-            Remove-Item -Path "C:\Users\$UserPasta\AppData\Local\Temp\*" -Recurse -Force -ErrorAction SilentlyContinue
+            $PastasTemp = @("C:\Windows\Temp")
+
+            # Busca a pasta Temp de todos os perfis em C:\Users (nao erra o nome da pasta)
+            Get-ChildItem "C:\Users" -Directory -ErrorAction SilentlyContinue | ForEach-Object {
+                $TempUser = Join-Path $_.FullName "AppData\Local\Temp"
+                if (Test-Path $TempUser) { $PastasTemp += $TempUser }
+            }
+
+            foreach ($Pasta in $PastasTemp) {
+                Write-Host " -> Limpando: $Pasta" -ForegroundColor Gray
+                # Apaga de dentro para fora (arquivo por arquivo), assim 1 arquivo em uso nao trava o resto da pasta
+                Get-ChildItem -Path $Pasta -Recurse -Force -ErrorAction SilentlyContinue |
+                    Sort-Object { $_.FullName.Length } -Descending |
+                    Remove-Item -Force -Recurse -ErrorAction SilentlyContinue
+            }
+
             Registrar-Log "Limpeza de arquivos temporarios"
             Write-Host "Concluido." -ForegroundColor Green
             Pause

@@ -57,6 +57,7 @@ function Mostrar-Menu {
     Write-Host ""
     Write-Host "--- TI ---" -ForegroundColor Yellow
     Write-Host " [20] Ver registro de acoes deste PC"
+    Write-Host " [21] Esvaziar Lixeira"
     Write-Host ""
     Write-Host " [ 0] Sair" -ForegroundColor Red
     Write-Host ""
@@ -92,7 +93,7 @@ do {
             Pause
         }
         "5" {
-            $Confirma = Read-Host "Isso agendará o CHKDSK no C: na proxima reinicializacao. Continuar? (S/N)"
+            $Confirma = Read-Host "Isso agendara o CHKDSK no C: na proxima reinicializacao. Continuar? (S/N)"
             if ($Confirma -match "^[Ss]$") {
                 chkdsk C: /f /r
                 Registrar-Log "Verificacao de disco C: (CHKDSK)"
@@ -234,6 +235,16 @@ do {
                 Get-Content $ArquivoLog
             } else {
                 Write-Host "Nenhum registro encontrado neste PC." -ForegroundColor Yellow
+            }
+            Pause
+        }
+        "21" {
+            $Confirma = Read-Host "Tem certeza que deseja esvaziar a Lixeira? Essa acao nao pode ser desfeita (S/N)"
+            if ($Confirma -match "^[Ss]$") {
+                Write-Host "Esvaziando Lixeira..." -ForegroundColor Green
+                Clear-RecycleBin -Force -ErrorAction SilentlyContinue
+                Registrar-Log "Lixeira esvaziada"
+                Write-Host "Lixeira esvaziada com sucesso." -ForegroundColor Green
             }
             Pause
         }

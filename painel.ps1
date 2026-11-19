@@ -159,10 +159,35 @@ do {
             Pause
         }
         "14" {
-            systeminfo | findstr /B /C:"Nome do host" /C:"Host Name" /C:"Nome do sistema" /C:"OS Name" /C:"Vers" /C:"OS Version" /C:"Fabricante" /C:"System Manufacturer" /C:"Modelo" /C:"System Model" /C:"Mem" /C:"Total Physical Memory"
-            Write-Host "`nNumero de Serie (BIOS):" -ForegroundColor Cyan
-            (Get-CimInstance Win32_BIOS).SerialNumber
-            Registrar-Log "Consulta de informacoes do sistema"
+            Write-Host "`nColetando informacoes do PC..." -ForegroundColor Cyan
+            $OS = Get-CimInstance Win32_OperatingSystem
+            $CS = Get-CimInstance Win32_ComputerSystem
+            $BIOS = Get-CimInstance Win32_BIOS
+            $CPU = Get-CimInstance Win32_Processor | Select-Object -First 1
+            $RAMTotal = [math]::Round($CS.TotalPhysicalMemory / 1GB, 2)
+            $Pentes = Get-CimInstance Win32_PhysicalMemory
+            $GPU = (Get-CimInstance Win32_VideoController).Name -join ", "
+            $IP = (Get-NetIPAddress -AddressFamily IPv4 | Where-Object { $_.InterfaceAlias -notmatch "Loopback" -and $_.IPAddress -notlike "169.254.*" } | Select-Object -First 1).IPAddress
+            $Uptime = (Get-Date) - $OS.LastBootUpTime
+
+            Write-Host "======================================================" -ForegroundColor Cyan
+            Write-Host "               RESUMO DO EQUIPAMENTO                  " -ForegroundColor White
+            Write-Host "======================================================" -ForegroundColor Cyan
+            Write-Host " Computador : $PC ($($CS.Manufacturer) $($CS.Model))"
+            Write-Host " Serie/Tag  : $($BIOS.SerialNumber)"
+            Write-Host " Sistema    : $($OS.Caption) (Build $($OS.BuildNumber))"
+            Write-Host " Processador: $($CPU.Name.Trim())"
+            Write-Host " Memoria RAM: $RAMTotal GB ($($Pentes.Count) pente(s))"
+            Write-Host " Placa Video: $GPU"
+            Write-Host " IP Local   : $IP"
+            Write-Host " Ligado ha  : $($Uptime.Days)d $($Uptime.Hours)h $($Uptime.Minutes)m"
+            Write-Host ""
+            Write-Host "--- DISCOS FISICOS (HD / SSD) ---" -ForegroundColor Yellow
+            Get-PhysicalDisk | Select-Object FriendlyName, MediaType, @{Name="Tamanho(GB)";Expression={[math]::Round($_.Size/1GB, 0)}}, HealthStatus | Format-Table -AutoSize
+            Write-Host "--- ESPACO EM DISCO (PARTICOES) ---" -ForegroundColor Yellow
+            Get-CimInstance Win32_LogicalDisk -Filter "DriveType=3" | Select-Object DeviceID, VolumeName, @{Name="Total(GB)";Expression={[math]::Round($_.Size/1GB, 1)}}, @{Name="Livre(GB)";Expression={[math]::Round($_.FreeSpace/1GB, 1)}} | Format-Table -AutoSize
+
+            Registrar-Log "Consulta de informacoes completas do sistema"
             Pause
         }
         "15" {
